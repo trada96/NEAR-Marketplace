@@ -10,9 +10,8 @@ use near_sdk::{
     PromiseOrValue,
 };
 
-const MINT_FEE: Balance = 1_000_000_000_000_000_000_000_00;
-const CREATE_AUCTION_FEE: Balance = 1_000_000_000_000_000_000_000_000;
-const ENROLL_FEE: Balance = 1_000_000_000_000_000_000_000_00;
+const MINT_NFT_FEE: Balance = 1_000_000_000_000_000_000_000_00;
+const AUCTION_FEE: Balance = 1_000_000_000_000_000_000_000_000;
 
 #[derive(Debug, BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
@@ -95,7 +94,7 @@ impl MarketPlace {
     ) -> Token {
         assert_eq!(
             env::attached_deposit(),
-            MINT_FEE,
+            MINT_NFT_FEE,
             "Marketplace: mint fee must be greater than MINT_FEE"
         );
 
@@ -153,11 +152,11 @@ impl MarketPlace {
             false,
             "Already auctioned"
         );
-        assert_eq!(
-            env::attached_deposit(),
-            CREATE_AUCTION_FEE,
-            "Maketplace: fee mus be greater than CREATE_AUCTION_FEE"
-        );
+        // assert_eq!(
+        //     env::attached_deposit(),
+        //     AUCTION_FEE,
+        //     "Maketplace: fee mus be greater than CREATE_AUCTION_FEE"
+        // );
 
         // Token se duoc gui vao contract
 
@@ -235,7 +234,7 @@ impl MarketPlace {
         // Neu chua co winner thi set winner, neu ton tai thi back lai tien
         if !(auction.winner == String::new()) {
             let old_owner = Promise::new(auction.winner);
-            old_owner.transfer(auction.current_price - ENROLL_FEE);
+            old_owner.transfer(auction.current_price);
         }
 
         auction.winner = env::predecessor_account_id();
@@ -294,9 +293,10 @@ impl MarketPlace {
             true,
             "This auction is not over yet"
         );
+
         assert_eq!(auction.is_near_claimed, false, "You has already claimed");
 
-        Promise::new(auction.clone().owner).transfer(auction.current_price);
+        Promise::new(auction.clone().owner).transfer(auction.current_price - AUCTION_FEE);
         auction.is_near_claimed = true;
 
         self.auction_by_id.insert(&auction_id, &auction);
